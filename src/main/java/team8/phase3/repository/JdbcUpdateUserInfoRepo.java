@@ -10,8 +10,6 @@ import team8.phase3.domain.Rank;
 
 public class JdbcUpdateUserInfoRepo {
 
-    private static final String SQL1 = "update NormalUser u set u.? = ? where u.id = ?";
-
     private static final String SQL2 = "select * from normaluser u where u.id = ?";
 
     private final  Connection conn;
@@ -49,10 +47,10 @@ public class JdbcUpdateUserInfoRepo {
     }
 
     public Status updateUserInfo(String attributeName, String attribute, String normalUserId){
+        String SQL1 = "update NormalUser u set u." + attributeName + " = ? where u.id = ?";
         try (PreparedStatement preparedStatement = conn.prepareStatement(SQL1)) {
-            preparedStatement.setString(1, attributeName);
-            preparedStatement.setString(2, attribute);
-            preparedStatement.setString(3, normalUserId);
+            preparedStatement.setString(1, attribute);
+            preparedStatement.setString(2, normalUserId);
 
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 return resultSet.next() ? Status.SUCCESS : Status.FAIL;
@@ -63,6 +61,22 @@ public class JdbcUpdateUserInfoRepo {
         }
     }
 
+    public Status updateUserInfo(String attributeName, Long attribute, String normalUserId){
+        String SQL1 = "update NormalUser u set u." + attributeName + " = ? where u.id = ?";
+        try (PreparedStatement preparedStatement = conn.prepareStatement(SQL1)) {
+            preparedStatement.setLong(1, attribute);
+            preparedStatement.setString(2, normalUserId);
+
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                return resultSet.next() ? Status.SUCCESS : Status.FAIL;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return Status.FAIL;
+        }
+    }
+
+
     private Rank intToRank(int num){
         if (num == 0){
             return Rank.NORMAL_BRONZE;
@@ -72,7 +86,6 @@ public class JdbcUpdateUserInfoRepo {
         }
         return Rank.NORMAL_GOLD;
     }
-
 
 }
 

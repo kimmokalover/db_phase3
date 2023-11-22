@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import team8.phase3.domain.PaymentType;
 import team8.phase3.domain.PurchaseTransaction;
@@ -12,7 +13,7 @@ import team8.phase3.domain.PurchaseTransaction;
 public class JdbcTransactionInfoRepo {
 
     private static final String SQL = "select * from normaluser n, purchasetransaction pt, product p where n.id = pt.userid and pt.productid = p.productid";
-
+    private static final String SQL2 = "insert into purchasetransaction values(?, ?, ?, ?, ?, ?)";
     private final Connection conn;
 
     public JdbcTransactionInfoRepo(Connection conn) {
@@ -30,7 +31,7 @@ public class JdbcTransactionInfoRepo {
                 String userId = resultSet.getString(2);
                 Long productId = resultSet.getLong(3);
                 Long totalPrice = resultSet.getLong(4);
-                PaymentType paymentType = intToPaymentType(resultSet.getInt(5));
+                PaymentType paymentType = StringToPaymentType(resultSet.getString(5));
                 Time purchaseTime = resultSet.getTime(6);
                 transactionInfos.add(new PurchaseTransaction(transactionId, userId, productId, totalPrice, paymentType, purchaseTime));
             }
@@ -40,12 +41,35 @@ public class JdbcTransactionInfoRepo {
 
         return transactionInfos;
     }
+    public Status createTransaction(PurchaseTransaction purchaseTransaction){
+        try (PreparedStatement preparedStatement = conn.prepareStatement(SQL2)) {
+            preparedStatement.setLong(1, purchaseTransaction.getTransactionId());
+            preparedStatement.setString(2, purchaseTransaction.getUserId());
+            preparedStatement.setLong(3, purchaseTransaction.getProductId());
+            preparedStatement.setLong(4, purchaseTransaction.getTotalPrice());
+            preparedStatement.setString(5, PaymentTypeToStringType(purchaseTransaction.getPaymentType()));
+            preparedStatement.setTime(6, purchaseTransaction.getPurchaseTime());
 
-    private PaymentType intToPaymentType(int num){
-        if (num == 1)return PaymentType.CASH;
-        else if (num == 2)return PaymentType.CARD;
-        else if (num == 3)return PaymentType.KAKAO;
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                return resultSet.next() ? Status.SUCCESS : Status.FAIL;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return Status.FAIL;
+        }
+    }
+    private PaymentType StringToPaymentType(String num){
+        if (num.equals("CASH"))return PaymentType.CASH;
+        else if (num.equals("CARD"))return PaymentType.CARD;
+        else if (num.equals("KAKAO"))return PaymentType.KAKAO;
         else return PaymentType.NAVER;
+    }
+
+    private String PaymentTypeToStringType(PaymentType num){
+        if (num == PaymentType.CASH)return "CASH";
+        else if (num == PaymentType.CARD)return "CARD";
+        else if (num == PaymentType.KAKAO)return "KAKAO";
+        else return "NAVER";
     }
 
 }
